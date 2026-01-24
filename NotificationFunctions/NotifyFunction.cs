@@ -2,7 +2,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.Extensions.Logging;
 
-namespace DataChangeTrackingFunctionApp;
+namespace SqlDataIntegrationFunctionTriggerApp;
 
 public static class NotifyFunction
 {

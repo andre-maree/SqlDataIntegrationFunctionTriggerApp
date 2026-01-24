@@ -4,7 +4,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
 
-namespace DataChangeTrackingFunctionApp;
+namespace SqlDataIntegrationFunctionTriggerApp;
 
 public class ClientAllowedColumnsFunction
 {

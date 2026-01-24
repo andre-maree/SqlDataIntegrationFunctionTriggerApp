@@ -3,7 +3,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.DurableTask.Client;
 
-namespace DataChangeTrackingFunctionApp;
+namespace SqlDataIntegrationFunctionTriggerApp;
 
 /// <summary>
 /// SQL-triggered Functions entry points. Each function is bound to a specific SQL table.

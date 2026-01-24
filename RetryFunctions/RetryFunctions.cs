@@ -5,7 +5,7 @@ using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
 
-namespace DataChangeTrackingFunctionApp;
+namespace SqlDataIntegrationFunctionTriggerApp;
 
 public class RetryFunctions
 {

@@ -2,7 +2,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Entities;
 
-namespace DataChangeTrackingFunctionApp;
+namespace SqlDataIntegrationFunctionTriggerApp;
 
 public class CleanupFunction
 {

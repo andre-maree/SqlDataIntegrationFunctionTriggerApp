@@ -1,6 +1,6 @@
 using Microsoft.Azure.Functions.Worker;
 
-namespace DataChangeTrackingFunctionApp;
+namespace SqlDataIntegrationFunctionTriggerApp;
 
 public class LastErrorEntity
 {

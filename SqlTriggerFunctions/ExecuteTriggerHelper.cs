@@ -5,7 +5,7 @@ using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
 
-namespace DataChangeTrackingFunctionApp;
+namespace SqlDataIntegrationFunctionTriggerApp;
 
 /// <summary>
 /// Helper with an extension method on FunctionContext that:
