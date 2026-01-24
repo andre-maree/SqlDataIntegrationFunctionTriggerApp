@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SqlDataIntegrationFunctionTriggerApp": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7120"
+    }
+  }
+}

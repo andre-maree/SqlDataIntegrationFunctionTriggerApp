@@ -1,0 +1,19 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+        "WEBSITE_SITE_NAME": "DataChangeTrackingFunctionApp",
+        "SqlConnectionString": "Server=(localdb)\\MSSQLLocalDB;Initial Catalog=DemoDatabase;Integrated Security=True;TrustServerCertificate=True;ConnectRetryCount=5;",
+        "Sql_Trigger_MaxBatchSize": 1000,
+        "Sql_Trigger_PollingIntervalMs": 5000,
+        "Sql_Trigger_MaxChangesPerWorker": 10000,
+        "HttpPostBaseUrl": "https://httpbin.org/",
+        "DurableFunctionRetryIntervalMinutes": 6,
+        "AllowedColumns_dbo.TrackingDemo": "Id,Name,LastUpdate",
+        "NotifyOnRetryCount": 10,
+        "MaxNumberOfRetries" : 100,
+        "KeepInstanceCompletedHistoryDays": 7,
+        "KeepInstanceFailedHistoryDays": 30
+    }
+}

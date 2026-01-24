@@ -1,0 +1,45 @@
+{
+    "version": "2.0",
+    "extensions": {
+        "queues": {
+            "maxPollingInterval": "00:30:00",
+            "visibilityTimeout": "00:00:30",
+            "batchSize": 16,
+            "maxDequeueCount": 5
+        },
+        "durableTask": {
+            "logReplayEvents": "false",
+            "hubName": "SqlChangeTrackingTaskHub",
+            "storageProvider": {
+                "controlQueueBatchSize": 32,
+                "controlQueueBufferThreshold": 256,
+                "controlQueueVisibilityTimeout": "00:01:00",
+                "maxQueuePollingInterval": "00:00:10",
+                "partitionCount": 1,
+                "workItemQueueVisibilityTimeout": "00:00:10"
+            },
+            "maxConcurrentActivityFunctions": 10,
+            "maxConcurrentOrchestratorFunctions": 10,
+            "extendedSessionsEnabled": false,
+            "extendedSessionIdleTimeoutInSeconds": 10,
+            "useAppLease": true,
+            "useGracefulShutdown": false,
+            "maxEntityOperationBatchSize": 50
+        },
+        "http": {
+            "routePrefix": ""
+        }
+    },
+    "logging": {
+        "logLevel": {
+            "DurableTask.AzureStorage": "None",
+            "DurableTask.Core": "None"
+        },
+        "applicationInsights": {
+            "samplingExcludedTypes": "Request",
+            "samplingSettings": {
+                "isEnabled": false
+            }
+        }
+    }
+}

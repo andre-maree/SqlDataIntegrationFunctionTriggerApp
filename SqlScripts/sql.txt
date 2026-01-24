@@ -1,0 +1,65 @@
+﻿USE [DemoDatabase]
+GO
+
+/****** Object:  Table [dbo].[TrackingDemo]    Script Date: 2025/12/10 10:44:30 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[TrackingDemo](
+	[Id] [int] NOT NULL,
+	[Name] [nvarchar](50) NOT NULL,
+	[LastUpdate] [datetime] NULL,
+ CONSTRAINT [PK_TrackingDemo] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+USE [DemoDatabase]
+GO
+
+/****** Object:  Table [dbo].[TrackingDemo2]    Script Date: 2025/12/10 10:44:30 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[TrackingDemo2](
+	[Id] [int] NOT NULL,
+	[Name] [nvarchar](50) NOT NULL,
+	[LastUpdate] [datetime] NULL,
+ CONSTRAINT [PK_TrackingDemo2] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+USE [DemoDatabase]
+GO
+INSERT [dbo].[TrackingDemo] ([Id], [Name], [LastUpdate]) VALUES (1, N'qwe', CAST(N'2025-11-04T17:45:16.000' AS DateTime))
+GO
+INSERT [dbo].[TrackingDemo] ([Id], [Name], [LastUpdate]) VALUES (2, N'qwe', CAST(N'2025-11-04T17:45:16.000' AS DateTime))
+GO
+INSERT [dbo].[TrackingDemo2] ([Id], [Name], [LastUpdate]) VALUES (1, N'qwe', CAST(N'2025-11-04T17:45:16.000' AS DateTime))
+GO
+INSERT [dbo].[TrackingDemo2] ([Id], [Name], [LastUpdate]) VALUES (2, N'qwe', CAST(N'2025-11-04T17:45:16.000' AS DateTime))
+GO
+
+ALTER DATABASE [DemoDatabase]
+SET CHANGE_TRACKING = ON
+(CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);
+
+ALTER TABLE [dbo].[TrackingDemo]
+ENABLE CHANGE_TRACKING;
+
+ALTER TABLE [dbo].[TrackingDemo2]
+ENABLE CHANGE_TRACKING;
+
+update dbo.TrackingDemo set [name] = 'qwe'
+update dbo.TrackingDemo2 set [name] = 'qwe'
