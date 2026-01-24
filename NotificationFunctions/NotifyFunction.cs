@@ -17,6 +17,8 @@ public static class NotifyFunction
         TaskOptions options = new(retryPolicy);
 
         await context.CallActivityAsync<string>(nameof(Notify), input, options);
+
+        await context.CreateTimer(context.CurrentUtcDateTime.AddHours(6), default);
     }
 
     [Function(nameof(Notify))]

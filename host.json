@@ -9,7 +9,7 @@
         },
         "durableTask": {
             "logReplayEvents": "false",
-            "hubName": "SqlChangeTrackingTaskHub",
+            "hubName": "SqlDataIntegrationFunctionTriggerAppHup",
             "storageProvider": {
                 "controlQueueBatchSize": 32,
                 "controlQueueBufferThreshold": 256,
