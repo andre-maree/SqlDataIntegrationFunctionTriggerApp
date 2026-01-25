@@ -16,7 +16,7 @@ public static class NotifyFunction
 
         TaskOptions options = new(retryPolicy);
 
-        await context.CallActivityAsync<string>(nameof(Notify), input, options);
+        await context.CallActivityAsync(nameof(Notify), input, options);
 
         await context.CreateTimer(context.CurrentUtcDateTime.AddHours(6), default);
     }
@@ -27,6 +27,8 @@ public static class NotifyFunction
         ILogger logger = executionContext.GetLogger("Notify");
 
         logger.LogError($"Notification: {message}");
+
+        await Task.CompletedTask;
         //handle notification logic here, e.g., send email or call an API, send to queue, etc.
     }
 }
