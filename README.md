@@ -14,7 +14,7 @@ Only the latest data changes are delivered. This is not a change log; rather, it
 - Cleanup job to purge old orchestration history and entity state.
 - Event-driven, no polling required: This app uses the Azure SQL trigger in an event-driven manner. When SQL Change Tracking/CDC commits changes, the `SqlTrigger` delivers them to the function automatically. You do not need to write custom polling loops; the extension handles lease management, batching, and delivery.
 
-## How the SQL Change Tracking/CDC feature workswith Azure Functions SQL trigger
+## How the SQL Change Tracking/CDC feature works with Azure Functions SQL trigger
 - The Azure Functions SQL trigger extension manages delivery.
 - It maintains a high-water mark and leases per table to ensure ordered, exactly-once batch delivery.
 - It polls on the configured interval (Sql_Trigger_PollingIntervalMs) and pulls changes up to Sql_Trigger_MaxBatchSize, respecting Sql_Trigger_MaxChangesPerWorker.
