@@ -66,13 +66,13 @@ Notes:
 
 ## Getting Started
 1. Create demo tables in SQL: see `SqlScripts/sql.txt`.
-2. Enable SQL Change Tracking or CDC for the database/tables.
+2. Enable SQL Change Tracking or CDC for the database/tables: see `SqlScripts/sql.txt`.
 3. Restore/build:
    - `dotnet restore`
    - `dotnet build`
 4. Run locally:
    - Press start in the IDE.
-5. Trigger changes: insert/update/delete rows in tracked tables.
+5. Trigger changes: insert/update/delete rows in tracked tables: see `SqlScripts/sql.txt`.
 6. Observe functions:
    - SQL trigger functions (under `SqlTriggerFunctions`) deliver change batches and delegate processing to `ExecuteTriggerFunction`.
    - `ActionFunctions/HttpPostAction` posts JSON to the configured HTTP endpoint.
