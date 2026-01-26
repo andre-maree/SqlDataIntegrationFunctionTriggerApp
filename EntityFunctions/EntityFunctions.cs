@@ -31,17 +31,3 @@ public class AllowedColumnsEntity
     public static Task AllowedColumnsRun([EntityTrigger] TaskEntityDispatcher dispatcher)
         => dispatcher.DispatchAsync<AllowedColumnsEntity>();
 }
-
-public class RetryCountEntity
-{
-    public int RetryCount { get; set; }
-
-    public void Save(int retryCount)
-    {
-        this.RetryCount = retryCount;
-    }
-
-    [Function(nameof(RetryCount))]
-    public static Task RetryCountRun([EntityTrigger] TaskEntityDispatcher dispatcher)
-        => dispatcher.DispatchAsync<RetryCountEntity>();
-}

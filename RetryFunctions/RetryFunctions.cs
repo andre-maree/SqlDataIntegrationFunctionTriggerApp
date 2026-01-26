@@ -4,6 +4,7 @@ using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
+using SqlDataIntegrationFunctionTriggerApp.Models;
 
 namespace SqlDataIntegrationFunctionTriggerApp;
 
@@ -22,11 +23,11 @@ public class RetryFunctions
         logger.LogCritical($"Orchestration is running for {context.InstanceId}");
 
         // Input: retry cadence. The value is minutes or seconds depending on the chosen TimeSpan (see toggle below).
-        int intervalInMinutes = context.GetInput<int>();
+        RetryObject retryObject = context.GetInput<RetryObject>();
 
         // Toggle between minutes and seconds for testing
-        TimeSpan fireAt = new(0, intervalInMinutes, 0);
-        //TimeSpan fireAt = new(0, 0, intervalInMinutes);
+        TimeSpan fireAt = new(0, retryObject.IntervalMinutes, 0);
+        //TimeSpan fireAt = new(0, 0, retryObject.IntervalMinutes);
 
         // Non-blocking timer inside the orchestrator; execution resumes after fireAt elapses
         await context.CreateTimer(fireAt, default);
@@ -37,8 +38,10 @@ public class RetryFunctions
 
         TaskOptions options = new(retryPolicy);
 
+        retryObject.RetryCount++;
+
         // Call activity that inspects SQL lease table/state and durable entities to decide next action
-        bool continueProcessing = await context.CallActivityAsync<bool>(nameof(CheckSqlStatus), options);
+        bool continueProcessing = await context.CallActivityAsync<bool>(nameof(CheckSqlStatus), retryObject.RetryCount, options);
 
         // true => continue retry loop; false => stop retrying
         if (continueProcessing)
@@ -54,7 +57,7 @@ public class RetryFunctions
         {
             // ContinueAsNew keeps the orchestration running with a fresh history to avoid unbounded growth.
             // Pass the same interval to the next generation.
-            context.ContinueAsNew(intervalInMinutes);
+            context.ContinueAsNew(retryObject);
         }
     }
 
@@ -66,33 +69,33 @@ public class RetryFunctions
     /// - Returns false when no further retries are needed (e.g., success or exceeded limits), true otherwise.
     /// </summary>
     [Function(nameof(CheckSqlStatus))]
-    public async Task<bool> CheckSqlStatus([ActivityTrigger] FunctionContext executionContext, [DurableClient] DurableTaskClient client)
+    public async Task<bool> CheckSqlStatus([ActivityTrigger] int retryCount, FunctionContext executionContext, [DurableClient] DurableTaskClient client)
     {
         // Orchestration instance id is the table name; use it to scope entities and lease queries.
         string table = executionContext.BindingContext.BindingData["instanceid"].ToString();
 
         // Read current retry count entity; may be null on first failure.
-        Microsoft.DurableTask.Client.Entities.EntityMetadata<RetryCountEntity>? retryCountEntity =
-                await client.Entities.GetEntityAsync<RetryCountEntity>(new EntityInstanceId("RetryCount", table));
+        //Microsoft.DurableTask.Client.Entities.EntityMetadata<RetryCountEntity>? retryCountEntity =
+        //        await client.Entities.GetEntityAsync<RetryCountEntity>(new EntityInstanceId("RetryCount", table));
 
-        int retryCountEntityInt;
+        //int retryCountEntityInt;
 
-        if (retryCountEntity != null)
-        {
-            retryCountEntityInt = retryCountEntity.State.RetryCount;
+        //if (retryCountEntity != null)
+        //{
+            //retryCountEntityInt = retryCountEntity.State.RetryCount;
 
             // If we've exceeded the max retries, delete state and stop retrying.
-            if (retryCountEntityInt > Convert.ToInt32(Environment.GetEnvironmentVariable("MaxNumberOfRetries")))
+            if (retryCount > Convert.ToInt32(Environment.GetEnvironmentVariable("MaxNumberOfRetries")))
             {
-                await client.Entities.SignalEntityAsync(new EntityInstanceId("RetryCount", table), "Delete");
+                //await client.Entities.SignalEntityAsync(new EntityInstanceId("RetryCount", table), "Delete");
 
                 return false;
             }
-        }
-        else
-        {
-            retryCountEntityInt = 0;
-        }
+        //}
+        //else
+        //{
+        //    retryCountEntityInt = 0;
+        //}
 
         // Connect to SQL and inspect the Azure Functions SQL trigger lease table for this table
         string? sqlConnectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
@@ -132,19 +135,19 @@ public class RetryFunctions
             await cmd.ExecuteNonQueryAsync();
 
             // If we've hit the notification threshold, start a NotifyOrchestrator
-            if (retryCountEntityInt == Convert.ToInt32(Environment.GetEnvironmentVariable("NotifyOnRetryCount")))
+            if (retryCount == Convert.ToInt32(Environment.GetEnvironmentVariable("NotifyOnRetryCount")))
             {
                 string notifyInstanceId = table + "_notify_" + Guid.NewGuid().ToString("N");
 
                 await client.ScheduleNewOrchestrationInstanceAsync(
                     "NotifyOrchestrator",
                     options: new StartOrchestrationOptions(InstanceId: notifyInstanceId),
-                    input: $"The action for table {table} has reached {retryCountEntityInt} retries.");
+                    input: $"The action for table {table} has reached {retryCount} retries.");
             }
 
             // Increment durable RetryCount and persist
-            retryCountEntityInt++;
-            await client.Entities.SignalEntityAsync(new EntityInstanceId("RetryCount", table), "Save", input: retryCountEntityInt);
+            //retryCountEntityInt++;
+            //await client.Entities.SignalEntityAsync(new EntityInstanceId("RetryCount", table), "Save", input: retryCountEntityInt);
         }
 
         // Returning true keeps the orchestration alive and retrying; false ends it.

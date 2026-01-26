@@ -4,6 +4,7 @@ using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
+using SqlDataIntegrationFunctionTriggerApp.Models;
 
 namespace SqlDataIntegrationFunctionTriggerApp;
 
@@ -113,7 +114,10 @@ public static class ExecuteTriggerHelper
                     await client.ScheduleNewOrchestrationInstanceAsync(
                         "RetryOrchestration",
                         options: new StartOrchestrationOptions(InstanceId: table),
-                        input: Convert.ToInt16(Environment.GetEnvironmentVariable("DurableFunctionRetryIntervalMinutes")));
+                        input: new RetryObject()
+                        {
+                            IntervalMinutes = Convert.ToInt16(Environment.GetEnvironmentVariable("DurableFunctionRetryIntervalMinutes"))
+                        });
                 }
 
                 // Rethrow so the SQL trigger does not advance its checkpoint and will redeliver on next poll
