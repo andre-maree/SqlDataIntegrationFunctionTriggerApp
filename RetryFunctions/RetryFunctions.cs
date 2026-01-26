@@ -25,8 +25,8 @@ public class RetryFunctions
         RetryObject retryObject = context.GetInput<RetryObject>();
 
         // Toggle between minutes and seconds for testing
-        //TimeSpan fireAt = new(0, retryObject.IntervalMinutes, 0);
-        TimeSpan fireAt = new(0, 0, retryObject.IntervalMinutes);
+        TimeSpan fireAt = new(0, retryObject.IntervalMinutes, 0);
+        //TimeSpan fireAt = new(0, 0, retryObject.IntervalMinutes);
 
         // Non-blocking timer inside the orchestrator; execution resumes after fireAt elapses
         await context.CreateTimer(fireAt, default);
