@@ -61,7 +61,8 @@ The config file `local.settings.json` (excluded from deployment) with required s
 ```
 
 Notes:
-- For client-driven column projection, use `AllowedColumns` entity via the `SaveClientAllowedColumns` function.
+- The `AllowedColumns_dbo.TrackingDemo` setting is used to project columns per table.
+- Column projection can also be set by an API call, use `AllowedColumns` entity via the `SaveClientAllowedColumns` function.
 - Ensure lease table names passed to `SqlTrigger` are valid (no dots in lease names). Example: `"lease_dbo_TrackingDemo"` if required by your environment.
 
 ## Getting Started
