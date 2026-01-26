@@ -1,6 +1,8 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
+using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SqlDataIntegrationFunctionTriggerApp;
 
@@ -10,15 +12,25 @@ public static class NotifyFunction
     public static async Task NotifyOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        string? input = context.GetInput<string>();
+        try
+        {
+            string? input = context.GetInput<string>();
 
-        RetryPolicy retryPolicy = new(firstRetryInterval: TimeSpan.FromSeconds(30), maxNumberOfAttempts: 100);
+            RetryPolicy retryPolicy = new(firstRetryInterval: TimeSpan.FromSeconds(15), maxNumberOfAttempts: 25, maxRetryInterval: TimeSpan.FromSeconds(45), backoffCoefficient: 1.1125);
 
-        TaskOptions options = new(retryPolicy);
+            TaskOptions options = new(retryPolicy);
 
-        await context.CallActivityAsync(nameof(Notify), input, options);
+            await context.CallActivityAsync(nameof(Notify), input, options);
 
-        await context.CreateTimer(context.CurrentUtcDateTime.AddHours(6), default);
+            await context.CreateTimer(context.CurrentUtcDateTime.AddHours(6), default);
+        }
+        catch (Exception ex)
+        {
+            // Persist notify error to a durable entity so callers/operators can inspect failures
+            EntityInstanceId entityId = new("LastError", context.InstanceId);
+
+            await context.Entities.SignalEntityAsync(entityId, "Save", input: ex.GetBaseException().Message);
+        }
     }
 
     [Function(nameof(Notify))]
