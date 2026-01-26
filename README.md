@@ -9,7 +9,7 @@ Only the latest data changes are delivered. This is not a change log; rather, it
 - Durable Functions:
   - Orchestration for retry: `RetryOrchestration`
   - Orchestration for error notifications:`NotifyOrchestrator`
-  - Durable Entities for state: `RetryCount`, `LastError`, `AllowedColumns`.
+  - Durable Entities for state: `LastError`, `AllowedColumns`.
 - Configurable allowed columns (per table) that can be set in the app config, and an additional allowed columns that can be set by the downstream target via an Api call.
 - Cleanup job to purge old orchestration history and entity state.
 - Event-driven, no polling required: This app uses the Azure SQL trigger in an event-driven manner. When SQL Change Tracking/CDC commits changes, the `SqlTrigger` delivers them to the function automatically. You do not need to write custom polling loops; the extension handles lease management, batching, and delivery.
