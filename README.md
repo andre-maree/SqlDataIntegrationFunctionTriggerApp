@@ -22,7 +22,7 @@ Only the latest data changes are delivered. This is not a change log; rather, it
 - If the function completes successfully, the checkpoint advances and the next batch is fetched.
 - If the function fails, the extension won’t advance the checkpoint; on the next poll, it will attempt delivery of the same batch again, always having the latest committed data.
 - The fuction SQL trigger will be called 5 times if it keeps failing to post the data. Failures are saved via the `LastError` entity.
-- The `RetryOrchestration` is started on the occurance of the first failed attempt. It will monitor and take over when the built-in retry of 5 times (set in `host.json` -> `extensions.queues.maxDequeueCount`) is exhausted. The orchestration will retry posting the data based on the configured retry interval and maxmun number of retries.
+- The `RetryOrchestration` is started on the occurance of the first failed attempt. It will monitor and take over when the built-in retry of 5 times is exhausted. The orchestration will retry posting the data based on the configured retry interval and maxmun number of retries.
 - `NotifyOnRetryCount` can be set in the `local.settings.json` file. When the orchestration reaches this retry count number, it will start the `NotifyOrchestrator` to send a notification (e.g., email) about the persistent failure. Note: the 5 built-in retries will happen first without checking this setting value and sending a notification. The `NotifyOnRetryCount` setting is only used in the `RetryOrchestration`, after the built-in retries have been exuasted.
 
 ## Serverless app that can be used for data integration
