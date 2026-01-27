@@ -54,4 +54,13 @@ public class ClientAllowedColumnsFunction
 
         return t?.State.AllowedColumns;
     }
+
+    public  static void ParseColumns(out bool doClientAllowedColumnsCheck, out string[] clientAllowedColumns, string clientColumns)
+    {
+        doClientAllowedColumnsCheck = true;
+        clientAllowedColumns = clientColumns
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim())
+            .ToArray();
+    }
 }

@@ -37,7 +37,7 @@ public class SqlTriggerFunctions
     {   
         // Delegate to helper: filter allowed columns, execute downstream action,
         // and coordinate durable retry/notification on failure.
-        await context.ExcuteChangeTrigger(changes, Table_TrackingDemo, client, _action, ["/post", Table_TrackingDemo]);
+        await ExecuteTriggerHelper.ExcuteChangeTrigger(context, changes, Table_TrackingDemo, client, _action, ["/post", Table_TrackingDemo]);
     }
 
     /// <summary>
@@ -52,6 +52,6 @@ public class SqlTriggerFunctions
             FunctionContext context)
     {
         // Delegate to helper for filtering, action execution, and durable coordination.
-        await context.ExcuteChangeTrigger(changes, Table_TrackingDemo2, client, _action, ["/post", Table_TrackingDemo2]);
+        await ExecuteTriggerHelper.ExcuteChangeTrigger(context, changes, Table_TrackingDemo2, client, _action, ["/post", Table_TrackingDemo2]);
     }
 }

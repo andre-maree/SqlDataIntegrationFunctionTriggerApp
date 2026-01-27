@@ -24,10 +24,18 @@ public static class ExecuteTriggerHelper
     /// - If retryable, schedules (or reuses) the RetryOrchestration and rethrows,
     /// - If non-retryable, schedules a NotifyOrchestrator.
     /// </summary>
-    public static async Task ExcuteChangeTrigger(this FunctionContext context, IReadOnlyList<SqlChange<JsonObject>> changes, string table, DurableTaskClient client, IDataSyncAction action, params object[] parameters)
+    public static async Task ExcuteChangeTrigger(
+        FunctionContext context,
+        IReadOnlyList<SqlChange<JsonObject>> changes,
+        string table,
+        DurableTaskClient client,
+        IDataSyncAction action,
+        params object[] parameters)
     {
         try
         {
+            #region Allowed columns check
+
             // Durable Entity id used to read/write allowed columns per table
             EntityInstanceId entityId = new("AllowedColumns", table);
 
@@ -41,11 +49,7 @@ public static class ExecuteTriggerHelper
 
             if (!string.IsNullOrWhiteSpace(clientColumns))
             {
-                doClientAllowedColumnsCheck = true;
-                clientAllowedColumns = clientColumns
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s => s.Trim())
-                    .ToArray();
+                ClientAllowedColumnsFunction.ParseColumns(out doClientAllowedColumnsCheck, out clientAllowedColumns, clientColumns);
             }
 
             // Load configuration-specified allowed columns from environment variables
@@ -53,11 +57,31 @@ public static class ExecuteTriggerHelper
 
             if (!string.IsNullOrWhiteSpace(configColumns))
             {
-                doConfigAllowedColumnsCheck = true;
-                configAllowedColumns = configColumns
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s => s.Trim())
-                    .ToArray();
+                ClientAllowedColumnsFunction.ParseColumns(out doConfigAllowedColumnsCheck, out configAllowedColumns, configColumns);
+            }
+
+            // Build a single allowlist for O(1) membership checks
+            HashSet<string>? allowList = null;
+
+            if (doClientAllowedColumnsCheck || doConfigAllowedColumnsCheck)
+            {
+                allowList = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                if (doConfigAllowedColumnsCheck)
+                {
+                    for (int i = 0; i < configAllowedColumns.Length; i++)
+                    {
+                        allowList.Add(configAllowedColumns[i]);
+                    }
+                }
+
+                if (doClientAllowedColumnsCheck)
+                {
+                    for (int i = 0; i < clientAllowedColumns.Length; i++)
+                    {
+                        allowList.Add(clientAllowedColumns[i]);
+                    }
+                }
             }
 
             // For each changed item, remove properties not present in allowed columns
@@ -65,28 +89,29 @@ public static class ExecuteTriggerHelper
             {
                 JsonObject item = change.Item;
 
-                for (int i = 0; i < item.Count;)
+                // Collect keys to remove to avoid repeated ElementAt/Remove (O(n^2))
+                List<string>? keysToRemove = null;
+
+                foreach (KeyValuePair<string, JsonNode?> prop in item)
                 {
-                    KeyValuePair<string, JsonNode?> prop = item.ElementAt(i);
-
-                    // Config-based allowlist check
-                    if (doConfigAllowedColumnsCheck && !configAllowedColumns.Contains(prop.Key))
+                    // If an allowlist exists and the prop is not allowed, mark it for removal
+                    if (allowList != null && !allowList.Contains(prop.Key))
                     {
-                        item.Remove(prop.Key);
-
-                        continue;
+                        keysToRemove ??= new List<string>();
+                        keysToRemove.Add(prop.Key);
                     }
+                }
 
-                    // Client-based allowlist check
-                    if (doClientAllowedColumnsCheck && !clientAllowedColumns.Contains(prop.Key))
+                if (keysToRemove != null)
+                {
+                    for (int i = 0; i < keysToRemove.Count; i++)
                     {
-                        item.Remove(prop.Key);
-                        continue;
+                        item.Remove(keysToRemove[i]);
                     }
-
-                    i++;
                 }
             }
+
+            #endregion
 
             // Execute downstream action (e.g., HTTP post) with filtered changes
             await action.ExecuteAction(changes, parameters);
@@ -97,14 +122,14 @@ public static class ExecuteTriggerHelper
             string error = string.IsNullOrWhiteSpace(ex.GetBaseException().Message) ? "No error information" : ex.GetBaseException().Message;
 
             // Non-retryable marker comes from HttpPostAction throwing with "retry=false"
-            bool mustNotRetry = error.StartsWith("retry=false");
+            bool mustRetry = !error.StartsWith("retry=false");
 
             // Persist last error to a durable entity so callers/operators can inspect failures
             EntityInstanceId entityId = new("LastError", table);
 
             await client.Entities.SignalEntityAsync(entityId, "Save", input: error);
 
-            if (!mustNotRetry)
+            if (mustRetry)
             {
                 // Ensure a single RetryOrchestration per table; start if not running
                 OrchestrationMetadata? retrystatus = await client.GetInstanceAsync(table);
@@ -120,7 +145,7 @@ public static class ExecuteTriggerHelper
                         });
                 }
 
-                // Rethrow so the SQL trigger does not advance its checkpoint and will redeliver on next poll
+                // Rethrow to trigger the built-in function 5 times retrying, if more than 5 the orchestration will take over retrying
                 throw;
             }
 

@@ -2,7 +2,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+//using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SqlDataIntegrationFunctionTriggerApp;
 
@@ -16,13 +16,14 @@ public static class NotifyFunction
         {
             string? input = context.GetInput<string>();
 
-            RetryPolicy retryPolicy = new(firstRetryInterval: TimeSpan.FromSeconds(15), maxNumberOfAttempts: 25, maxRetryInterval: TimeSpan.FromSeconds(45), backoffCoefficient: 1.1125);
-
-            TaskOptions options = new(retryPolicy);
+            TaskOptions options = new(new RetryPolicy(firstRetryInterval: TimeSpan.FromSeconds(15),
+                                                      maxNumberOfAttempts: 25,
+                                                      maxRetryInterval: TimeSpan.FromSeconds(45),
+                                                      backoffCoefficient: 1.1125));
 
             await context.CallActivityAsync(nameof(Notify), input, options);
 
-            // Only the sigleton instance with _code suffix sets a timer to prevent too many rapid notifications
+            // Only the singleton instance with _code suffix sets a timer to prevent too many rapid notifications
             if (context.InstanceId.EndsWith("_code"))
             {
                 await context.CreateTimer(context.CurrentUtcDateTime.AddHours(6), default);
@@ -42,7 +43,7 @@ public static class NotifyFunction
     {
         ILogger logger = executionContext.GetLogger("Notify");
 
-        logger.LogError($"Notification: {message}");
+        logger.LogWarning($"Notification: {message}");
 
         await Task.CompletedTask;
         //handle notification logic here, e.g., send email or call an API, send to queue, etc.

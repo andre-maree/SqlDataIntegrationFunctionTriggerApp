@@ -9,6 +9,8 @@ namespace SqlDataIntegrationFunctionTriggerApp;
 
 public class RetryFunctions
 {
+    #region Orchestration
+
     /// <summary>
     /// Durable orchestration that waits for a configurable interval, then calls an activity
     /// to inspect SQL trigger lease state and decide whether to continue retrying.
@@ -25,15 +27,21 @@ public class RetryFunctions
         RetryObject retryObject = context.GetInput<RetryObject>();
 
         // Toggle between minutes and seconds for testing
-        TimeSpan fireAt = new(0, retryObject.IntervalMinutes, 0);
-        //TimeSpan fireAt = new(0, 0, retryObject.IntervalMinutes);
+        TimeSpan fireAt = new(hours: 0, minutes: retryObject.IntervalMinutes, seconds: 0);
+        //TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryObject.IntervalMinutes);
+
 
         // Non-blocking timer inside the orchestrator; execution resumes after fireAt elapses
         await context.CreateTimer(fireAt, default);
 
         logger.LogCritical($"Orchestration {context.InstanceId} is now calling the CheckSqlStatus activity");
 
-        RetryPolicy retryPolicy = new(1000, TimeSpan.FromSeconds(15), backoffCoefficient: 1.125, maxRetryInterval: TimeSpan.FromMinutes(5), retryTimeout: TimeSpan.FromDays(2));
+        RetryPolicy retryPolicy = new(
+            1000,
+            TimeSpan.FromSeconds(15),
+            backoffCoefficient: 1.125,
+            maxRetryInterval: TimeSpan.FromMinutes(5),
+            retryTimeout: TimeSpan.FromDays(2));
 
         TaskOptions options = new(retryPolicy);
 
@@ -42,7 +50,7 @@ public class RetryFunctions
         // Call activity that inspects SQL lease table/state and durable entities to decide next action
         bool continueProcessing = await context.CallActivityAsync<bool>(nameof(CheckSqlStatus), retryObject.RetryCount, options);
 
-        // true => continue retry loop; false => stop retrying
+        // true => continue retry loop; false => exit eternal orchestration
         if (continueProcessing)
         {
             logger.LogWarning($"Orchestration {context.InstanceId} is retying with continueProcessing = true");
@@ -56,6 +64,10 @@ public class RetryFunctions
             logger.LogWarning($"Success: CheckSqlStatus activity for orchestration {context.InstanceId} returned false and will exit");
         }
     }
+
+    #endregion
+
+    #region SQL check activity
 
     /// <summary>
     /// Activity that determines whether to keep retrying:
@@ -127,4 +139,6 @@ public class RetryFunctions
         // Returning true keeps the orchestration alive and retrying; false ends it.
         return true;
     }
+
+    #endregion
 }

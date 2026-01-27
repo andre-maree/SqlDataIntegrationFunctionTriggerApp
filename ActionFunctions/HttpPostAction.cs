@@ -36,7 +36,7 @@ public class HttpPostAction : IDataSyncAction
         using StringContent content = new(JsonSerializer.Serialize(changes), System.Text.Encoding.UTF8, "application/json");
 
         // Ensure the POST does not hang indefinitely (60s timeout)
-        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(60));
+        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(960));
 
         string route = parameters[0]?.ToString() ?? string.Empty;
 
@@ -53,6 +53,8 @@ public class HttpPostAction : IDataSyncAction
 
             return;
         }
+
+        #region Unhappy path
 
         // Capture a small error snippet from the response body for diagnostics
         string errorcontent = await response.Content.ReadAsStringAsync();
@@ -79,5 +81,7 @@ public class HttpPostAction : IDataSyncAction
             // This allows upstream logic to differentiate and schedule notifications only.
             throw new HttpRequestException($"retry=false - HTTP {response.StatusCode}: {errorcontent}");
         }
+
+        #endregion
     }
 }
