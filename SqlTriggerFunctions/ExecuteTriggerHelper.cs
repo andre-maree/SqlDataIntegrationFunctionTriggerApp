@@ -124,8 +124,8 @@ public static class ExecuteTriggerHelper
                 throw;
             }
 
-            // For non-retryable failures, schedule a notification orchestrator with a fixed id
-            string notifyInstanceId = table + "_notify_received_a_nonretryable_httpstatuscode";
+            // For non-retryable failures, schedule a notification orchestrator with a fixed id/singleton orchestration
+            string notifyInstanceId = table + "_notify_received_a_nonretryable_code";
 
             OrchestrationMetadata? notifystatus = await client.GetInstanceAsync(notifyInstanceId);
 

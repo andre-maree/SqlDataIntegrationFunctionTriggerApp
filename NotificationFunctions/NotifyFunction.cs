@@ -22,7 +22,11 @@ public static class NotifyFunction
 
             await context.CallActivityAsync(nameof(Notify), input, options);
 
-            await context.CreateTimer(context.CurrentUtcDateTime.AddHours(6), default);
+            // Only the sigleton instance with _code suffix sets a timer to prevent too many rapid notifications
+            if (context.InstanceId.EndsWith("_code"))
+            {
+                await context.CreateTimer(context.CurrentUtcDateTime.AddHours(6), default);
+            }
         }
         catch (Exception ex)
         {

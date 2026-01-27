@@ -45,7 +45,7 @@ public class RetryFunctions
         // true => continue retry loop; false => stop retrying
         if (continueProcessing)
         {
-            logger.LogError($"Failure: CheckSqlStatus activity for orchestration {context.InstanceId} returned true and is retrying");
+            logger.LogWarning($"Orchestration {context.InstanceId} is retying with continueProcessing = true");
 
             // ContinueAsNew keeps the orchestration running with a fresh history to avoid unbounded growth.
             // Pass the same interval to the next generation.
@@ -115,6 +115,7 @@ public class RetryFunctions
         // If we've hit the notification threshold, start a NotifyOrchestrator
         if (retryCount == Convert.ToInt32(Environment.GetEnvironmentVariable("NotifyOnRetryCount")))
         {
+            // Append a guid to the instanceId to ensure notify orchestration uniqueness and prevent it from waiting
             string notifyInstanceId = table + "_notify_" + Guid.NewGuid().ToString("N");
 
             await client.ScheduleNewOrchestrationInstanceAsync(
