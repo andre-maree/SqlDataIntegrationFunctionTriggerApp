@@ -36,7 +36,7 @@ This app runs serverlessly on Azure Functions, scaling automatically based on lo
 - SQL Server with Change Tracking enabled and the demo tables created (see `sql.txt`).
 
 ## Configuration
-The config file `local.settings.json` (excluded from deployment). The setting `AllowedColumns_dbo.TrackingDemo` is not required, if it is included, the columns will be projected. If it is omitted then all columns will be allowed:
+This is the config file `local.settings.json` (excluded from deployment). The setting `AllowedColumns_dbo.TrackingDemo` is not required, if it is included, the columns will be projected. If it is omitted then all columns will be allowed:
 
 ```
 {
