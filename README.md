@@ -76,8 +76,8 @@ Notes:
 6. Observe functions:
    - SQL trigger functions (under `SqlTriggerFunctions`) deliver change batches and delegate processing to `ExecuteTriggerFunction`.
    - `ActionFunctions/HttpPostAction` posts JSON to the configured HTTP endpoint.
-   - Failures record `LastError` entity and start `RetryOrchestration`.
-   - `NotifyOrchestrator` runs when `RetryCount` hits `NotifyOnRetryCount`.
+   - Failures are saved via the `LastError` entity.
+   - `NotifyOrchestrator` runs when `RetryCount` hits `NotifyOnRetryCount` or when a non-retryable HTTP statuscode is returned.
    - `CleanupFunction` purges old history and entity state per schedule.
 
 ## Project structure (key parts)
