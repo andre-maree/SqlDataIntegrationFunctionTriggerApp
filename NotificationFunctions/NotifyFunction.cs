@@ -2,7 +2,6 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
-//using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SqlDataIntegrationFunctionTriggerApp;
 
