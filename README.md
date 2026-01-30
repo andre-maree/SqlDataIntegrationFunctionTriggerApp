@@ -102,5 +102,11 @@ Deploy to Azure Functions (Consumption or Premium). Ensure app settings include:
 - `WEBSITE_SITE_NAME` (set by Azure automatically on deploy).
 - All values from `local.settings.json` moved into Azure Configuration.
 
+## Final deployment checklist to enable target based scaling (TBS)
+- SQL Side: Verify Change Tracking is ON with a retention period longer than your longest intended retry (e.g., 7 days).
+- Ensure your DurableOrchestration uses RetryOptions with maxNumberOfAttempts: -1.
+- Cloud Side: Deploy to Flex Consumption and toggle Runtime Scale Monitoring to On in the Azure Portal.
+- Security: Use Managed Identity to connect to SQL so your "infinite" retries never fail due to an expired password.
+
 ## License
 MIT
