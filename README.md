@@ -103,7 +103,7 @@ Deploy to Azure Functions (Consumption or Premium). Ensure app settings include:
 - All values from `local.settings.json` moved into Azure Configuration.
 
 ## Final deployment checklist and enabling target based scaling (TBS)
-- Enabling TBS is only needed for more aggressive scaling if a large backlog of change rows in a lease table is a likely problem in terms of speedy processing
+- Enabling TBS is only needed for more aggressive scaling if a large backlog of change rows in a lease table is a likely problem in terms of speedy processing.
 - SQL Side: Verify Change Tracking is ON with a retention period longer than your longest intended retry (e.g., 7 days).
 - Ensure your DurableOrchestration uses RetryOptions with maxNumberOfAttempts: -1.
 - Cloud Side: Deploy to Flex Consumption and toggle Runtime Scale Monitoring to On in the Azure Portal.
