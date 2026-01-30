@@ -1,6 +1,6 @@
 # SqlDataIntegrationFunctionTriggerApp
 
-Azure Functions app (.NET 8, isolated worker) that receives SQL Server data changes with the SQL Server Change Tracking/CDC feature enabled. The changed data payload is received by an Azure Function via the SqlTrigger function input binding.
+Azure Functions app (.NET 8, isolated worker) that receives SQL Server data changes in an event-driven manner with the SQL Server Change Tracking/CDC feature enabled. The changed data payload is received by an Azure Function via the SqlTrigger function input binding.
 
 Only the latest data changes are delivered. This is not a change log; rather, it provides the current state of changed rows in near real time. The app processes the changes, removes unneeded columns , HTTP posts changes to an endpoint, and uses Durable Functions for retries and notifications. Durable entity state is used for persisting the last error info.
 
