@@ -106,8 +106,8 @@ Deploy to Azure Functions (Consumption or Premium). Ensure app settings include:
 - Enabling TBS is only needed for more aggressive scaling if a large backlog of change rows in a lease table is a likely problem in terms of speedy processing.
 - SQL Side: Verify Change Tracking is ON with a retention period longer than your longest intended retry (e.g., 7 days).
 - Ensure your DurableOrchestration uses RetryOptions with maxNumberOfAttempts: -1.
-- Cloud Side: Deploy to Flex Consumption and toggle Runtime Scale Monitoring to On in the Azure Portal.
-- Security: Use Managed Identity to connect to SQL so your "infinite" retries never fail due to an expired password.
+- Cloud Side: Deploy to the Flex Consumption plan and toggle Runtime Scale Monitoring to ON in the Azure Portal.
+- Security: Use Managed Identity to connect to SQL so your retries never fail due to an expired password or token.
 
 ## License
 MIT
