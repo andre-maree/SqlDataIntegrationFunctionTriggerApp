@@ -107,7 +107,7 @@ Deploy to Azure Functions (Consumption or Premium). Ensure app settings include:
 - SQL Side: Verify Change Tracking is ON with a retention period longer than your longest intended retry (e.g., 7 days).
 - Ensure your DurableOrchestration uses RetryOptions with maxNumberOfAttempts: -1.
 - Cloud Side: Deploy to the Flex Consumption plan and toggle Runtime Scale Monitoring to ON in the Azure Portal.
-- Security: Use Managed Identity to connect to SQL so your retries never fail due to an expired password or token.
+- Security: Use Managed Identity to connect to SQL so that there will be no failures due to an expired password.
 
 ## License
 MIT
