@@ -7,7 +7,7 @@ using SqlDataIntegrationFunctionTriggerApp.Models;
 
 namespace SqlDataIntegrationFunctionTriggerApp;
 
-public class RetryFunctions
+public static class RetryFunctions
 {
     #region Orchestration
 
@@ -27,8 +27,8 @@ public class RetryFunctions
         RetryObject retryObject = context.GetInput<RetryObject>();
 
         // Toggle between minutes and seconds for testing
-        TimeSpan fireAt = new(hours: 0, minutes: retryObject.IntervalMinutes, seconds: 0);
-        //TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryObject.IntervalMinutes);
+        //TimeSpan fireAt = new(hours: 0, minutes: retryObject.IntervalMinutes, seconds: 0);
+        TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryObject.IntervalMinutes);
 
 
         // Non-blocking timer inside the orchestrator; execution resumes after fireAt elapses
@@ -37,11 +37,11 @@ public class RetryFunctions
         logger.LogCritical($"Orchestration {context.InstanceId} is now calling the CheckSqlStatus activity");
 
         RetryPolicy retryPolicy = new(
-            1000,
+            -1,
             TimeSpan.FromSeconds(15),
             backoffCoefficient: 1.125,
-            maxRetryInterval: TimeSpan.FromMinutes(5),
-            retryTimeout: TimeSpan.FromDays(2));
+            maxRetryInterval: TimeSpan.FromMinutes(10),
+            retryTimeout: TimeSpan.FromDays(7));
 
         TaskOptions options = new(retryPolicy);
 
@@ -65,6 +65,47 @@ public class RetryFunctions
         }
     }
 
+    /// <summary> 
+    /// Attempts to start the per-table RetryOrchestration up to 3 times,
+    /// waiting 2 seconds between attempts. If an instance with the given table
+    /// instanceId is already running, it returns immediately without scheduling.
+    /// </summary>
+    public static async Task StartRetryOrchectration(string table, DurableTaskClient client)
+    {
+        // Try up to 3 times with a 2-second delay between attempts
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            OrchestrationMetadata? retrystatus = await client.GetInstanceAsync(table);
+
+            // If already running, nothing to start
+            if (retrystatus != null && retrystatus.IsRunning)
+            {
+                return;
+            }
+
+            try
+            {
+                await client.ScheduleNewOrchestrationInstanceAsync(
+                    "RetryOrchestration",
+                    options: new StartOrchestrationOptions(InstanceId: table),
+                    input: new RetryObject()
+                    {
+                        IntervalMinutes = Convert.ToInt16(Environment.GetEnvironmentVariable("DurableFunctionRetryIntervalMinutes"))
+                    });
+            }
+            catch
+            {
+                // If we have remaining attempts, wait 2 seconds and retry
+                if (attempt < 2)
+                {
+                    await Task.Delay(2000);
+
+                    continue;
+                }
+            }
+        }
+    }
+
     #endregion
 
     #region SQL check activity
@@ -77,7 +118,7 @@ public class RetryFunctions
     /// - Returns false when no further retries are needed (e.g., success or exceeded limits), true otherwise.
     /// </summary>
     [Function(nameof(CheckSqlStatus))]
-    public async Task<bool> CheckSqlStatus([ActivityTrigger] int retryCount, FunctionContext executionContext, [DurableClient] DurableTaskClient client)
+    public static async Task<bool> CheckSqlStatus([ActivityTrigger] int retryCount, FunctionContext executionContext, [DurableClient] DurableTaskClient client)
     {
         // Orchestration instance id is the table name; use it to scope entities and lease queries.
         string table = executionContext.BindingContext.BindingData["instanceid"].ToString();

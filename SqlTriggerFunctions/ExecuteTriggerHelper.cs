@@ -5,6 +5,7 @@ using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
 using SqlDataIntegrationFunctionTriggerApp.Models;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SqlDataIntegrationFunctionTriggerApp;
 
@@ -132,35 +133,13 @@ public static class ExecuteTriggerHelper
             if (mustRetry)
             {
                 // Ensure a single RetryOrchestration per table; start if not running
-                OrchestrationMetadata? retrystatus = await client.GetInstanceAsync(table);
-
-                if (retrystatus == null || !retrystatus.IsRunning)
-                {
-                    await client.ScheduleNewOrchestrationInstanceAsync(
-                        "RetryOrchestration",
-                        options: new StartOrchestrationOptions(InstanceId: table),
-                        input: new RetryObject()
-                        {
-                            IntervalMinutes = Convert.ToInt16(Environment.GetEnvironmentVariable("DurableFunctionRetryIntervalMinutes"))
-                        });
-                }
-
-                // Rethrow to trigger the built-in function 5 times retrying, if more than 5 the orchestration will take over retrying
-                throw;
+                await RetryFunctions.StartRetryOrchectration(table, client);
             }
 
-            // For non-retryable failures, schedule a notification orchestrator with a fixed id/singleton orchestration
-            string notifyInstanceId = table + "_notify_received_a_nonretryable_code";
+            await NotifyFunctions.StartNotifyOrchectration(table, client, error);
 
-            OrchestrationMetadata? notifystatus = await client.GetInstanceAsync(notifyInstanceId);
-
-            if (notifystatus == null || !notifystatus.IsRunning)
-            {
-                await client.ScheduleNewOrchestrationInstanceAsync(
-                    "NotifyOrchestrator",
-                    options: new StartOrchestrationOptions(InstanceId: notifyInstanceId),
-                    input: $"The action for table {table} encountered a non-retryable HTTP status code: {error}");
-            }
+            // Trigger a retry by the SQLtrigger function
+            throw;
         }
     }
 }
