@@ -27,8 +27,8 @@ public static class RetryFunctions
         RetryObject retryObject = context.GetInput<RetryObject>();
 
         // Toggle between minutes and seconds for testing
-        //TimeSpan fireAt = new(hours: 0, minutes: retryObject.IntervalMinutes, seconds: 0);
-        TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryObject.IntervalMinutes);
+        TimeSpan fireAt = new(hours: 0, minutes: retryObject.IntervalMinutes, seconds: 0);
+        //TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryObject.IntervalMinutes);
 
 
         // Non-blocking timer inside the orchestrator; execution resumes after fireAt elapses
@@ -167,14 +167,8 @@ public static class RetryFunctions
 
         // If we've hit the notification threshold, start a NotifyOrchestrator
         if (retryCount == Convert.ToInt32(Environment.GetEnvironmentVariable("NotifyOnRetryCount")))
-        {
-            // Append a guid to the instanceId to ensure notify orchestration uniqueness and prevent it from waiting
-            string notifyInstanceId = table + "_notify_" + Guid.NewGuid().ToString("N");
-
-            await client.ScheduleNewOrchestrationInstanceAsync(
-                "NotifyOrchestrator",
-                options: new StartOrchestrationOptions(InstanceId: notifyInstanceId),
-                input: $"The action for table {table} has reached {retryCount} retries.");
+        {            
+            await NotifyFunctions.StartNotifyOrchectration(table, client, error);
         }
 
         // Returning true keeps the orchestration alive and retrying; false ends it.
