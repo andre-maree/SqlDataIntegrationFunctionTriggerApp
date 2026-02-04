@@ -30,7 +30,7 @@ public static class NotifyFunctions
             // Only the singleton instance with _code suffix sets a timer to prevent too many rapid notifications
             if (context.InstanceId.EndsWith("_code"))
             {
-                await context.CreateTimer(context.CurrentUtcDateTime.AddHours(6), default);
+                await context.CreateTimer(context.CurrentUtcDateTime.AddMinutes(360), default);
             }
         }
         catch (Exception ex)
@@ -58,14 +58,13 @@ public static class NotifyFunctions
     /// waiting 2 seconds between attempts. If an instance with the given
     /// instanceId is already running, it returns immediately without scheduling.
     /// <summary>
-    public static async Task StartNotifyOrchectration(string table, DurableTaskClient client, string error)
+    public static async Task StartNotifyOrchectration(string table, DurableTaskClient client, string error, string instanceIdPostfix = "received_a_nonretryable_code")
     {
+        string notifyInstanceId = $"{table}_notify_{instanceIdPostfix}";
+
         // Try up to 3 times with a 2-second delay between attempts
         for (int attempt = 0; attempt < 3; attempt++)
         {
-            // For non-retryable failures, schedule a notification orchestrator with a fixed id/singleton orchestration
-            string notifyInstanceId = table + "_notify_received_a_nonretryable_code";
-
             OrchestrationMetadata? notifystatus = await client.GetInstanceAsync(notifyInstanceId);
 
             // If already running, nothing to start
@@ -79,7 +78,7 @@ public static class NotifyFunctions
                 await client.ScheduleNewOrchestrationInstanceAsync(
                     "NotifyOrchestrator",
                     options: new StartOrchestrationOptions(InstanceId: notifyInstanceId),
-                    input: $"The action for table {table} encountered a non-retryable HTTP status code: {error}");
+                    input: error);
 
                 return; // scheduled successfully
             }

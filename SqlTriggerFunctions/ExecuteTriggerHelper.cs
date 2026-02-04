@@ -135,8 +135,10 @@ public static class ExecuteTriggerHelper
                 // Ensure a single RetryOrchestration per table; start if not running
                 await RetryFunctions.StartRetryOrchectration(table, client);
             }
-
-            await NotifyFunctions.StartNotifyOrchectration(table, client, error);
+            else
+            {
+                await NotifyFunctions.StartNotifyOrchectration(table, client, error);
+            }
 
             // Trigger a retry by the SQLtrigger function
             throw;

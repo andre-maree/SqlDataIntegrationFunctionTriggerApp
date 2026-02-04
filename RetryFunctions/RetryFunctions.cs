@@ -37,7 +37,7 @@ public static class RetryFunctions
         logger.LogCritical($"Orchestration {context.InstanceId} is now calling the CheckSqlStatus activity");
 
         RetryPolicy retryPolicy = new(
-            -1,
+            999999,
             TimeSpan.FromSeconds(15),
             backoffCoefficient: 1.125,
             maxRetryInterval: TimeSpan.FromMinutes(10),
@@ -167,8 +167,8 @@ public static class RetryFunctions
 
         // If we've hit the notification threshold, start a NotifyOrchestrator
         if (retryCount == Convert.ToInt32(Environment.GetEnvironmentVariable("NotifyOnRetryCount")))
-        {            
-            await NotifyFunctions.StartNotifyOrchectration(table, client, error);
+        {
+            await NotifyFunctions.StartNotifyOrchectration(table, client, $"The action for table {table} has reached {retryCount} retries.", instanceIdPostfix: "NotifyOnRetryCount");
         }
 
         // Returning true keeps the orchestration alive and retrying; false ends it.
