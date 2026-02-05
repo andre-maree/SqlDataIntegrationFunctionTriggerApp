@@ -11,7 +11,7 @@
         "HttpPostBaseUrl": "https://httpbin.org/",
         "DurableFunctionRetryIntervalMinutes": 6,
         "AllowedColumns_dbo.TrackingDemo": "Id,Name",
-        "NotifyOnRetryCount": 1,
+        "NotifyOnRetryCount": 5,
         "MaxNumberOfRetries" : 100,
         "KeepInstanceCompletedHistoryDays": 7,
         "KeepInstanceFailedHistoryDays": 30

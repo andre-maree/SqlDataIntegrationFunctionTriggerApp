@@ -27,8 +27,8 @@ public static class RetryFunctions
         RetryObject retryObject = context.GetInput<RetryObject>();
 
         // Toggle between minutes and seconds for testing
-        TimeSpan fireAt = new(hours: 0, minutes: retryObject.IntervalMinutes, seconds: 0);
-        //TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryObject.IntervalMinutes);
+        //TimeSpan fireAt = new(hours: 0, minutes: retryObject.IntervalMinutes, seconds: 0);
+        TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryObject.IntervalMinutes);
 
 
         // Non-blocking timer inside the orchestrator; execution resumes after fireAt elapses
@@ -53,7 +53,7 @@ public static class RetryFunctions
         // true => continue retry loop; false => exit eternal orchestration
         if (continueProcessing)
         {
-            logger.LogWarning($"Orchestration {context.InstanceId} is retying with continueProcessing = true");
+            logger.LogWarning($"Orchestration {context.InstanceId} is retrying with continueProcessing = true");
 
             // ContinueAsNew keeps the orchestration running with a fresh history to avoid unbounded growth.
             // Pass the same interval to the next generation.
