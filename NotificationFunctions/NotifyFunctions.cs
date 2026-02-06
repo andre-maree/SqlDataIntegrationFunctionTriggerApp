@@ -65,10 +65,10 @@ public static class NotifyFunctions
         // Try up to 3 times with a 2-second delay between attempts
         for (int attempt = 0; attempt < 3; attempt++)
         {
-            OrchestrationMetadata? notifystatus = await client.GetInstanceAsync(notifyInstanceId);
+            OrchestrationMetadata? notifyStatus = await client.GetInstanceAsync(notifyInstanceId);
 
             // If already running, nothing to start
-            if (notifystatus != null && notifystatus.IsRunning)
+            if (notifyStatus != null && notifyStatus.IsRunning)
             {
                 return;
             }

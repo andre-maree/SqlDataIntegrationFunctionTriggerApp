@@ -97,6 +97,6 @@ ENABLE CHANGE_TRACKING;
 update dbo.TrackingDemo set [name] = 'anotherValue'
 update dbo.TrackingDemo2 set [name] = 'anotherValue'
 
--- hack the SQL trigger to be exuasted quicker
+-- hack the SQL trigger to be exhausted quicker
 update [az_func].[lease_dbo.TrackingDemo] set [_az_func_AttemptCount] = 5
 update [az_func].[lease_dbo.TrackingDemo2] set [_az_func_AttemptCount] = 5

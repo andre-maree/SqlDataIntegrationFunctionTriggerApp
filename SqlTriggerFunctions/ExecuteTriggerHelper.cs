@@ -26,7 +26,7 @@ public static class ExecuteTriggerHelper
     /// - If retryable, schedules (or reuses) the RetryOrchestration and rethrows,
     /// - If non-retryable, schedules a NotifyOrchestrator.
     /// </summary>
-    public static async Task ExcuteChangeTrigger(
+    public static async Task ExecuteChangeTrigger(
         FunctionContext context,
         IReadOnlyList<SqlChange<JsonObject>> changes,
         string table,
@@ -135,7 +135,7 @@ public static class ExecuteTriggerHelper
             {
                 var settings = context.InstanceServices.GetService<Microsoft.Extensions.Options.IOptions<AppSettings>>()!.Value;
 
-                await RetryFunctions.StartRetryOrchectration(table, client, settings.DurableFunctionRetryIntervalMinutes);
+                await RetryFunctions.StartRetryOrchestration(table, client, settings.DurableFunctionRetryIntervalMinutes);
             }
             else
             {

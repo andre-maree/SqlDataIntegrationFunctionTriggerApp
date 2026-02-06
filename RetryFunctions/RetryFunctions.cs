@@ -71,7 +71,7 @@ public static class RetryFunctions
     /// waiting 2 seconds between attempts. If an instance with the given table
     /// instanceId is already running, it returns immediately without scheduling.
     /// </summary>
-    public static async Task StartRetryOrchectration(string table, DurableTaskClient client, int intervalMinutes)
+    public static async Task StartRetryOrchestration(string table, DurableTaskClient client, int intervalMinutes)
     {
         // Try up to 3 times with a 2-second delay between attempts
         for (int attempt = 0; attempt < 3; attempt++)
