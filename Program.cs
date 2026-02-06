@@ -5,6 +5,7 @@ using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 FunctionsApplicationBuilder builder = FunctionsApplication.CreateBuilder(args);
 
@@ -15,7 +16,8 @@ builder.Services.ConfigureFunctionsApplicationInsights();
 
 builder.Services.AddHttpClient("Default", client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["HttpPostBaseUrl"]);
+    string? baseUrl = builder.Configuration["HttpPostBaseUrl"];
+    client.BaseAddress = new Uri(baseUrl ?? throw new InvalidOperationException("HttpPostBaseUrl configuration is missing."));
     client.DefaultRequestHeaders.Accept.Clear();
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 });
@@ -27,5 +29,14 @@ builder.Services.AddTransient<HttpPostAction>(sp =>
     return new HttpPostAction(client, logger);
 });
 builder.Services.AddTransient<IDataSyncAction>(sp => sp.GetRequiredService<HttpPostAction>());
+
+builder.Services.AddOptions<AppSettings>()
+    .Configure<IConfiguration>((opts, cfg) =>
+    {
+        opts.DurableFunctionRetryIntervalMinutes = cfg.GetValue<int>("DurableFunctionRetryIntervalMinutes");
+        opts.MaxNumberOfRetries = cfg.GetValue<int>("MaxNumberOfRetries");
+        opts.NotifyOnRetryCount = cfg.GetValue<int>("NotifyOnRetryCount");
+        opts.SqlConnectionString = cfg.GetConnectionString("SqlConnectionString") ?? cfg["SqlConnectionString"];
+    });
 
 builder.Build().Run();

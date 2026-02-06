@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SqlDataIntegrationFunctionTriggerApp.Models;
 
@@ -27,8 +28,8 @@ public static class RetryFunctions
         RetryObject retryObject = context.GetInput<RetryObject>();
 
         // Toggle between minutes and seconds for testing
-        //TimeSpan fireAt = new(hours: 0, minutes: retryObject.IntervalMinutes, seconds: 0);
-        TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryObject.IntervalMinutes);
+        TimeSpan fireAt = new(hours: 0, minutes: retryObject.IntervalMinutes, seconds: 0);
+        //TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryObject.IntervalMinutes);
 
 
         // Non-blocking timer inside the orchestrator; execution resumes after fireAt elapses
@@ -70,7 +71,7 @@ public static class RetryFunctions
     /// waiting 2 seconds between attempts. If an instance with the given table
     /// instanceId is already running, it returns immediately without scheduling.
     /// </summary>
-    public static async Task StartRetryOrchectration(string table, DurableTaskClient client)
+    public static async Task StartRetryOrchectration(string table, DurableTaskClient client, int intervalMinutes)
     {
         // Try up to 3 times with a 2-second delay between attempts
         for (int attempt = 0; attempt < 3; attempt++)
@@ -90,7 +91,7 @@ public static class RetryFunctions
                     options: new StartOrchestrationOptions(InstanceId: table),
                     input: new RetryObject()
                     {
-                        IntervalMinutes = Convert.ToInt16(Environment.GetEnvironmentVariable("DurableFunctionRetryIntervalMinutes"))
+                        IntervalMinutes = intervalMinutes
                     });
             }
             catch
@@ -118,22 +119,22 @@ public static class RetryFunctions
     /// - Returns false when no further retries are needed (e.g., success or exceeded limits), true otherwise.
     /// </summary>
     [Function(nameof(CheckSqlStatus))]
-    public static async Task<bool> CheckSqlStatus([ActivityTrigger] int retryCount, FunctionContext executionContext, [DurableClient] DurableTaskClient client)
+    public static async Task<bool> CheckSqlStatus(
+        [ActivityTrigger] int retryCount,
+        FunctionContext executionContext,
+        [DurableClient] DurableTaskClient client)
     {
-        // Orchestration instance id is the table name; use it to scope entities and lease queries.
-        string table = executionContext.BindingContext.BindingData["instanceid"].ToString();
+        var settings = executionContext.InstanceServices.GetService<Microsoft.Extensions.Options.IOptions<AppSettings>>()!.Value;
 
-        // If we've exceeded the max retries, delete state and stop retrying.
-        if (retryCount > Convert.ToInt32(Environment.GetEnvironmentVariable("MaxNumberOfRetries")))
+        if (retryCount > settings.MaxNumberOfRetries)
         {
             return false;
         }
 
-        // Connect to SQL and inspect the Azure Functions SQL trigger lease table for this table
-        string? sqlConnectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
+        // Orchestration instance id is the table name; use it to scope entities and lease queries.
+        string table = executionContext.BindingContext.BindingData["instanceid"].ToString();
 
-        using SqlConnection conn = new(sqlConnectionString);
-
+        using var conn = new SqlConnection(settings.SqlConnectionString);
         await conn.OpenAsync();
 
         // Get the highest attempt count recorded by the SQL trigger extension
@@ -166,7 +167,7 @@ public static class RetryFunctions
         }
 
         // If we've hit the notification threshold, start a NotifyOrchestrator
-        if (retryCount == Convert.ToInt32(Environment.GetEnvironmentVariable("NotifyOnRetryCount")))
+        if (retryCount == settings.NotifyOnRetryCount)
         {
             await NotifyFunctions.StartNotifyOrchectration(table, client, $"The action for table {table} has reached {retryCount} retries.", instanceIdPostfix: "NotifyOnRetryCount");
         }

@@ -4,6 +4,7 @@ using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
+using Microsoft.Extensions.DependencyInjection;
 using SqlDataIntegrationFunctionTriggerApp.Models;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -132,8 +133,9 @@ public static class ExecuteTriggerHelper
 
             if (mustRetry)
             {
-                // Ensure a single RetryOrchestration per table; start if not running
-                await RetryFunctions.StartRetryOrchectration(table, client);
+                var settings = context.InstanceServices.GetService<Microsoft.Extensions.Options.IOptions<AppSettings>>()!.Value;
+
+                await RetryFunctions.StartRetryOrchectration(table, client, settings.DurableFunctionRetryIntervalMinutes);
             }
             else
             {
