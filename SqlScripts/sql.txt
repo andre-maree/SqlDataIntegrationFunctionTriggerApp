@@ -100,3 +100,35 @@ update dbo.TrackingDemo2 set [name] = 'anotherValue'
 -- hack the SQL trigger to be exhausted quicker
 update [az_func].[lease_dbo.TrackingDemo] set [_az_func_AttemptCount] = 5
 update [az_func].[lease_dbo.TrackingDemo2] set [_az_func_AttemptCount] = 5
+
+-- update to trigger a refresh all
+update dbo.TrackingDemo set id=id
+
+-- update to trigger a refresh all, safe for a very large table:
+SELECT TOP (1000) [Id]
+      ,[Name]
+      ,[LastUpdate]
+  FROM [DemoDatabase].[dbo].[TrackingDemo]
+
+  DECLARE @batchSize INT = 500;
+DECLARE @minId INT, @maxId INT, @cursorId INT;
+
+SELECT @minId = MIN(Id), @maxId = MAX(Id) FROM dbo.[TrackingDemo];
+SET @cursorId = @minId;
+
+WHILE @cursorId IS NOT NULL AND @cursorId <= @maxId
+BEGIN
+  WITH cte AS (
+    SELECT Id
+    FROM dbo.[TrackingDemo] WITH (ROWLOCK, READPAST)
+    WHERE Id BETWEEN @cursorId AND (@cursorId + @batchSize - 1)
+  )
+  UPDATE T
+  SET Id = T.Id
+  FROM dbo.[TrackingDemo] AS T
+  INNER JOIN cte ON cte.Id = T.Id;
+
+  IF @@ROWCOUNT = 0 BREAK;
+
+  SET @cursorId = @cursorId + @batchSize;
+END;
