@@ -54,16 +54,16 @@ public static class NotifyFunctions
     }
 
     /// <summary> 
-    /// Attempts to start the per-table NotifyOrchestrator up to 3 times,
+    /// Attempts to start the per-table NotifyOrchestrator up to 5 times,
     /// waiting 2 seconds between attempts. If an instance with the given
     /// instanceId is already running, it returns immediately without scheduling.
     /// <summary>
-    public static async Task StartNotifyOrchectration(string table, DurableTaskClient client, string error, string instanceIdPostfix = "received_a_nonretryable_code")
+    public static async Task StartNotifyOrchectrator(string table, DurableTaskClient client, string error, string instanceIdPostfix = "received_a_nonretryable_code")
     {
         string notifyInstanceId = $"{table}_notify_{instanceIdPostfix}";
 
-        // Try up to 3 times with a 2-second delay between attempts
-        for (int attempt = 0; attempt < 3; attempt++)
+        // Try up to 5 times with a 2-second delay between attempts
+        for (int attempt = 1; attempt <= 5; attempt++)
         {
             OrchestrationMetadata? notifyStatus = await client.GetInstanceAsync(notifyInstanceId);
 
@@ -76,7 +76,7 @@ public static class NotifyFunctions
             try
             {
                 await client.ScheduleNewOrchestrationInstanceAsync(
-                    "NotifyOrchestrator",
+                    nameof(NotifyOrchestrator),
                     options: new StartOrchestrationOptions(InstanceId: notifyInstanceId),
                     input: error);
 
@@ -85,12 +85,14 @@ public static class NotifyFunctions
             catch
             {
                 // If we have remaining attempts, wait 2 seconds and retry
-                if (attempt < 2)
+                if (attempt < 5)
                 {
                     await Task.Delay(2000);
 
                     continue;
                 }
+
+                throw;
             }
         }
     }

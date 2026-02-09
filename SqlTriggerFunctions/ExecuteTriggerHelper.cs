@@ -135,11 +135,11 @@ public static class ExecuteTriggerHelper
             {
                 var settings = context.InstanceServices.GetService<Microsoft.Extensions.Options.IOptions<AppSettings>>()!.Value;
 
-                await RetryFunctions.StartRetryOrchestration(table, client, settings.DurableFunctionRetryIntervalMinutes);
+                await RetryFunctions.StartRetryOrchestrator(table, client, settings.DurableFunctionRetryIntervalMinutes);
             }
             else
             {
-                await NotifyFunctions.StartNotifyOrchectration(table, client, error);
+                await NotifyFunctions.StartNotifyOrchectrator(table, client, error);
             }
 
             // Trigger a retry by the SQLtrigger function

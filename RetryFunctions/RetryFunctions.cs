@@ -16,8 +16,8 @@ public static class RetryFunctions
     /// Durable orchestration that waits for a configurable interval, then calls an activity
     /// to inspect SQL trigger lease state and decide whether to continue retrying.
     /// </summary>
-    [Function(nameof(RetryOrchestration))]
-    public static async Task RetryOrchestration(
+    [Function(nameof(RetryOrchestrator))]
+    public static async Task RetryOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         ILogger logger = context.CreateReplaySafeLogger("RetryOrchestration");
@@ -38,13 +38,13 @@ public static class RetryFunctions
         logger.LogCritical($"Orchestration {context.InstanceId} is now calling the CheckSqlStatus activity");
 
         RetryPolicy retryPolicy = new(
-            999999,
-            TimeSpan.FromSeconds(15),
+            maxNumberOfAttempts: 999999,
+            firstRetryInterval: TimeSpan.FromSeconds(15),
             backoffCoefficient: 1.125,
             maxRetryInterval: TimeSpan.FromMinutes(10),
             retryTimeout: TimeSpan.FromDays(7));
 
-        TaskOptions options = new(retryPolicy);
+        TaskOptions options = new(retry: retryPolicy);
 
         retryObject.RetryCount++;
 
@@ -57,7 +57,7 @@ public static class RetryFunctions
             logger.LogWarning($"Orchestration {context.InstanceId} is retrying with continueProcessing = true");
 
             // ContinueAsNew keeps the orchestration running with a fresh history to avoid unbounded growth.
-            // Pass the same interval to the next generation.
+            // Pass the same interval and incremented retry count to the next generation.
             context.ContinueAsNew(retryObject);
         }
         else
@@ -67,14 +67,14 @@ public static class RetryFunctions
     }
 
     /// <summary> 
-    /// Attempts to start the per-table RetryOrchestration up to 3 times,
+    /// Attempts to start the per-table RetryOrchestration up to 5 times,
     /// waiting 2 seconds between attempts. If an instance with the given table
     /// instanceId is already running, it returns immediately without scheduling.
     /// </summary>
-    public static async Task StartRetryOrchestration(string table, DurableTaskClient client, int intervalMinutes)
+    public static async Task StartRetryOrchestrator(string table, DurableTaskClient client, int intervalMinutes)
     {
-        // Try up to 3 times with a 2-second delay between attempts
-        for (int attempt = 0; attempt < 3; attempt++)
+        // Try up to 5 times with a 2-second delay between attempts
+        for (int attempt = 1; attempt <= 5; attempt++)
         {
             OrchestrationMetadata? retrystatus = await client.GetInstanceAsync(table);
 
@@ -87,22 +87,26 @@ public static class RetryFunctions
             try
             {
                 await client.ScheduleNewOrchestrationInstanceAsync(
-                    "RetryOrchestration",
+                    nameof(RetryOrchestrator),
                     options: new StartOrchestrationOptions(InstanceId: table),
                     input: new RetryObject()
                     {
                         IntervalMinutes = intervalMinutes
                     });
+
+                throw new ArgumentException();
             }
             catch
             {
                 // If we have remaining attempts, wait 2 seconds and retry
-                if (attempt < 2)
+                if (attempt < 5)
                 {
                     await Task.Delay(2000);
 
                     continue;
                 }
+
+                throw;
             }
         }
     }
@@ -169,7 +173,7 @@ public static class RetryFunctions
         // If we've hit the notification threshold, start a NotifyOrchestrator
         if (retryCount == settings.NotifyOnRetryCount)
         {
-            await NotifyFunctions.StartNotifyOrchectration(table, client, $"The action for table {table} has reached {retryCount} retries.", instanceIdPostfix: "NotifyOnRetryCount");
+            await NotifyFunctions.StartNotifyOrchectrator(table, client, $"The action for table {table} has reached {retryCount} retries.", instanceIdPostfix: "NotifyOnRetryCount");
         }
 
         // Returning true keeps the orchestration alive and retrying; false ends it.
