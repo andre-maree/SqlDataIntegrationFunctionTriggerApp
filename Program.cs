@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using SqlDataIntegrationFunctionTriggerApp.Models;
 
 FunctionsApplicationBuilder builder = FunctionsApplication.CreateBuilder(args);
 
@@ -34,7 +35,7 @@ builder.Services.AddOptions<AppSettings>()
     .Configure<IConfiguration>((opts, cfg) =>
     {
         opts.DurableFunctionRetryIntervalMinutes = cfg.GetValue<int>("DurableFunctionRetryIntervalMinutes");
-        opts.MaxNumberOfRetries = cfg.GetValue<int>("MaxNumberOfRetries");
+        opts.TotalRetryTimeOutHours = cfg.GetValue<int>("TotalRetryTimeOutHours");
         opts.NotifyOnRetryCount = cfg.GetValue<int>("NotifyOnRetryCount");
         opts.SqlConnectionString = cfg.GetConnectionString("SqlConnectionString") ?? cfg["SqlConnectionString"];
     });

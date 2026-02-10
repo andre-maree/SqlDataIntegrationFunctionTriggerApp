@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Functions.Worker;
+﻿using System.Threading;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Data.SqlClient;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
@@ -25,31 +26,31 @@ public static class RetryFunctions
         logger.LogCritical($"Orchestration is running for {context.InstanceId}");
 
         // Input: retry cadence. The value is minutes or seconds depending on the chosen TimeSpan (see toggle below).
-        RetryObject retryObject = context.GetInput<RetryObject>();
+        RetryOrchestrationObject retryOrchestrationObject = context.GetInput<RetryOrchestrationObject>();
 
         // Toggle between minutes and seconds for testing
-        TimeSpan fireAt = new(hours: 0, minutes: retryObject.IntervalMinutes, seconds: 0);
-        //TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryObject.IntervalMinutes);
-
+        //TimeSpan fireAt = new(hours: 0, minutes: retryOrchestrationObject.IntervalMinutes, seconds: 0);
+        TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryOrchestrationObject.IntervalMinutes);
 
         // Non-blocking timer inside the orchestrator; execution resumes after fireAt elapses
         await context.CreateTimer(fireAt, default);
 
         logger.LogCritical($"Orchestration {context.InstanceId} is now calling the CheckSqlStatus activity");
+        
 
         RetryPolicy retryPolicy = new(
             maxNumberOfAttempts: 999999,
             firstRetryInterval: TimeSpan.FromSeconds(15),
             backoffCoefficient: 1.125,
-            maxRetryInterval: TimeSpan.FromMinutes(10),
-            retryTimeout: TimeSpan.FromDays(7));
+            maxRetryInterval: TimeSpan.FromMinutes(retryOrchestrationObject.IntervalMinutes),
+            retryTimeout: retryOrchestrationObject.SqlActivityObject.RetryTimeoutSpan);
 
         TaskOptions options = new(retry: retryPolicy);
 
-        retryObject.RetryCount++;
+        retryOrchestrationObject.SqlActivityObject.RetryCount++;
 
         // Call activity that inspects SQL lease table/state and durable entities to decide next action
-        bool continueProcessing = await context.CallActivityAsync<bool>(nameof(CheckSqlStatus), retryObject.RetryCount, options);
+        bool continueProcessing = await context.CallActivityAsync<bool>(nameof(CheckSqlStatus), retryOrchestrationObject.SqlActivityObject, options);
 
         // true => continue retry loop; false => exit eternal orchestration
         if (continueProcessing)
@@ -58,7 +59,7 @@ public static class RetryFunctions
 
             // ContinueAsNew keeps the orchestration running with a fresh history to avoid unbounded growth.
             // Pass the same interval and incremented retry count to the next generation.
-            context.ContinueAsNew(retryObject);
+            context.ContinueAsNew(retryOrchestrationObject);
         }
         else
         {
@@ -71,7 +72,7 @@ public static class RetryFunctions
     /// waiting 2 seconds between attempts. If an instance with the given table
     /// instanceId is already running, it returns immediately without scheduling.
     /// </summary>
-    public static async Task StartRetryOrchestrator(string table, DurableTaskClient client, int intervalMinutes)
+    public static async Task StartRetryOrchestrator(string table, DurableTaskClient client, RetryOrchestrationObject retryOrchestrationObject)
     {
         // Try up to 5 times with a 2-second delay between attempts
         for (int attempt = 1; attempt <= 5; attempt++)
@@ -89,12 +90,7 @@ public static class RetryFunctions
                 await client.ScheduleNewOrchestrationInstanceAsync(
                     nameof(RetryOrchestrator),
                     options: new StartOrchestrationOptions(InstanceId: table),
-                    input: new RetryObject()
-                    {
-                        IntervalMinutes = intervalMinutes
-                    });
-
-                throw new ArgumentException();
+                    input: retryOrchestrationObject);
             }
             catch
             {
@@ -124,13 +120,13 @@ public static class RetryFunctions
     /// </summary>
     [Function(nameof(CheckSqlStatus))]
     public static async Task<bool> CheckSqlStatus(
-        [ActivityTrigger] int retryCount,
+        [ActivityTrigger] SqlActivityObject sqlActivityObject,
         FunctionContext executionContext,
         [DurableClient] DurableTaskClient client)
     {
         var settings = executionContext.InstanceServices.GetService<Microsoft.Extensions.Options.IOptions<AppSettings>>()!.Value;
 
-        if (retryCount > settings.MaxNumberOfRetries)
+        if (sqlActivityObject.StartDate.Add(sqlActivityObject.RetryTimeoutSpan) < DateTime.UtcNow)
         {
             return false;
         }
@@ -171,9 +167,9 @@ public static class RetryFunctions
         }
 
         // If we've hit the notification threshold, start a NotifyOrchestrator
-        if (retryCount == settings.NotifyOnRetryCount)
+        if (sqlActivityObject.RetryCount == settings.NotifyOnRetryCount)
         {
-            await NotifyFunctions.StartNotifyOrchectrator(table, client, $"The action for table {table} has reached {retryCount} retries.", instanceIdPostfix: "NotifyOnRetryCount");
+            await NotifyFunctions.StartNotifyOrchectrator(table, client, $"The action for table {table} has reached {sqlActivityObject.RetryCount} retries.", instanceIdPostfix: "NotifyOnRetryCount");
         }
 
         // Returning true keeps the orchestration alive and retrying; false ends it.

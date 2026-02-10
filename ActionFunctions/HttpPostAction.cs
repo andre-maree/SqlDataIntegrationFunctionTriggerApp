@@ -47,7 +47,7 @@ public class HttpPostAction : IDataSyncAction
         using HttpResponseMessage response = await _httpClient.PostAsync(route, content, cts.Token);
 
         // Fast path: success => log and return without throwing
-        if (response.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning("Success: POST to {Route} for table {table} with response {Status}", route, parameters[1], (int)response.StatusCode);
 
@@ -71,16 +71,16 @@ public class HttpPostAction : IDataSyncAction
         // Throwing here ensures:
         //  - Durable orchestration will kick in
         //  - The SQL trigger extension will not advance its checkpoint and will redeliver.
-        if ((int)response.StatusCode == 429 || (int)response.StatusCode == 408 || (int)response.StatusCode >= 500)
-        {
+        //if ((int)response.StatusCode == 429 || (int)response.StatusCode == 408 || (int)response.StatusCode >= 500)
+        //{
             throw new HttpRequestException($"HTTP {(int)response.StatusCode}: {errorcontent}");
-        }
-        else
-        {
-            // Non-retryable statuses propagate with a "retry=false" marker.
-            // This allows upstream logic to differentiate and schedule notifications only.
-            throw new HttpRequestException($"retry=false - HTTP {response.StatusCode}: {errorcontent}");
-        }
+        //}
+        //else
+        //{
+        //    // Non-retryable statuses propagate with a "retry=false" marker.
+        //    // This allows upstream logic to differentiate and schedule notifications only.
+        //    throw new HttpRequestException($"retry=false - HTTP {response.StatusCode}: {errorcontent}");
+        //}
 
         #endregion
     }

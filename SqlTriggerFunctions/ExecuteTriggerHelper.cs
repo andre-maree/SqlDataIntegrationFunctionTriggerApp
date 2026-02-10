@@ -135,7 +135,17 @@ public static class ExecuteTriggerHelper
             {
                 var settings = context.InstanceServices.GetService<Microsoft.Extensions.Options.IOptions<AppSettings>>()!.Value;
 
-                await RetryFunctions.StartRetryOrchestrator(table, client, settings.DurableFunctionRetryIntervalMinutes);
+                RetryOrchestrationObject retryOrchestrationObject = new()
+                {
+                    IntervalMinutes = settings.DurableFunctionRetryIntervalMinutes,
+                    SqlActivityObject = new SqlActivityObject
+                    {
+                        RetryTimeoutSpan = TimeSpan.FromHours(settings.TotalRetryTimeOutHours),
+                        StartDate = DateTime.UtcNow
+                    }
+                };
+
+                await RetryFunctions.StartRetryOrchestrator(table, client, retryOrchestrationObject);
             }
             else
             {
