@@ -37,7 +37,6 @@ public static class RetryFunctions
 
         logger.LogGrey($"Orchestration {context.InstanceId} is now calling the CheckSqlStatus activity");
         
-
         RetryPolicy retryPolicy = new(
             maxNumberOfAttempts: 999999,
             firstRetryInterval: TimeSpan.FromSeconds(15),

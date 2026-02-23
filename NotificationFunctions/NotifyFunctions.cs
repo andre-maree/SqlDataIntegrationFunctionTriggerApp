@@ -47,7 +47,7 @@ public static class NotifyFunctions
     {
         ILogger logger = executionContext.GetLogger("Notify");
 
-        logger.LogWarning($"Notification: {message}");
+        logger.LogOrange($"Notification: {message}");
 
         await Task.CompletedTask;
         //handle notification logic here, e.g., send email or call an API, send to queue, etc.
