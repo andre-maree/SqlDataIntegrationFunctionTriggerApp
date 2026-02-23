@@ -41,15 +41,15 @@ public class HttpPostAction : IDataSyncAction
         string route = parameters[0]?.ToString() ?? string.Empty;
 
         // Log the intent to post with basic context
-        _logger.LogCritical("Posting {Count} change(s) for table {table} to route {Route}", changes?.Count ?? 0, parameters[1], route);
+        _logger.LogGrey("Posting {Count} change(s) for table {table} to route {Route}", changes?.Count ?? 0, parameters[1], route);
 
         // Perform the HTTP POST to the relative/absolute route; HttpClient base address should be configured elsewhere
         using HttpResponseMessage response = await _httpClient.PostAsync(route, content, cts.Token);
 
         // Fast path: success => log and return without throwing
-        if (!response.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("Success: POST to {Route} for table {table} with response {Status}", route, parameters[1], (int)response.StatusCode);
+            _logger.LogOrange("Success: POST to {Route} for table {table} with response {Status}", route, parameters[1], (int)response.StatusCode);
 
             return;
         }
@@ -62,7 +62,7 @@ public class HttpPostAction : IDataSyncAction
         int cutoff = 500;
         errorcontent = errorcontent.Length > cutoff ? errorcontent.Substring(0, cutoff) : errorcontent;
 
-        _logger.LogError("POST for {table} to route {Route} failed with {Status}: {Snippet}", parameters[1], route, (int)response.StatusCode, errorcontent);
+        _logger.LogRed("POST for {table} to route {Route} failed with {Status}: {Snippet}", parameters[1], route, (int)response.StatusCode, errorcontent);
 
         // Retry on transient statuses:
         //  - 429 Too Many Requests
@@ -71,16 +71,16 @@ public class HttpPostAction : IDataSyncAction
         // Throwing here ensures:
         //  - Durable orchestration will kick in
         //  - The SQL trigger extension will not advance its checkpoint and will redeliver.
-        //if ((int)response.StatusCode == 429 || (int)response.StatusCode == 408 || (int)response.StatusCode >= 500)
-        //{
+        if ((int)response.StatusCode == 429 || (int)response.StatusCode == 408 || (int)response.StatusCode >= 500)
+        {
             throw new HttpRequestException($"HTTP {(int)response.StatusCode}: {errorcontent}");
-        //}
-        //else
-        //{
-        //    // Non-retryable statuses propagate with a "retry=false" marker.
-        //    // This allows upstream logic to differentiate and schedule notifications only.
-        //    throw new HttpRequestException($"retry=false - HTTP {response.StatusCode}: {errorcontent}");
-        //}
+        }
+        else
+        {
+            // Non-retryable statuses propagate with a "retry=false" marker.
+            // This allows upstream logic to differentiate and schedule notifications only.
+            throw new HttpRequestException($"retry=false - HTTP {response.StatusCode}: {errorcontent}");
+        }
 
         #endregion
     }

@@ -23,19 +23,19 @@ public static class RetryFunctions
     {
         ILogger logger = context.CreateReplaySafeLogger("RetryOrchestration");
 
-        logger.LogCritical($"Orchestration is running for {context.InstanceId}");
+        logger.LogGrey($"Orchestration is running for {context.InstanceId}");
 
         // Input: retry cadence. The value is minutes or seconds depending on the chosen TimeSpan (see toggle below).
         RetryOrchestrationObject retryOrchestrationObject = context.GetInput<RetryOrchestrationObject>();
 
         // Toggle between minutes and seconds for testing
-        //TimeSpan fireAt = new(hours: 0, minutes: retryOrchestrationObject.IntervalMinutes, seconds: 0);
-        TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryOrchestrationObject.IntervalMinutes);
+        TimeSpan fireAt = new(hours: 0, minutes: retryOrchestrationObject.IntervalMinutes, seconds: 0);
+        //TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryOrchestrationObject.IntervalMinutes);
 
         // Non-blocking timer inside the orchestrator; execution resumes after fireAt elapses
         await context.CreateTimer(fireAt, default);
 
-        logger.LogCritical($"Orchestration {context.InstanceId} is now calling the CheckSqlStatus activity");
+        logger.LogGrey($"Orchestration {context.InstanceId} is now calling the CheckSqlStatus activity");
         
 
         RetryPolicy retryPolicy = new(
@@ -55,7 +55,7 @@ public static class RetryFunctions
         // true => continue retry loop; false => exit eternal orchestration
         if (continueProcessing)
         {
-            logger.LogWarning($"Orchestration {context.InstanceId} is retrying with continueProcessing = true");
+            logger.LogOrange($"Orchestration {context.InstanceId} is retrying with continueProcessing = true");
 
             // ContinueAsNew keeps the orchestration running with a fresh history to avoid unbounded growth.
             // Pass the same interval and incremented retry count to the next generation.
@@ -63,7 +63,7 @@ public static class RetryFunctions
         }
         else
         {
-            logger.LogWarning($"Success: CheckSqlStatus activity for orchestration {context.InstanceId} returned false and will exit");
+            logger.LogOrange($"Success: CheckSqlStatus activity for orchestration {context.InstanceId} returned false and will exit");
         }
     }
 
