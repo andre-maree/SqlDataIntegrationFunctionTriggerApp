@@ -1,5 +1,4 @@
-﻿using System.Threading;
-using Microsoft.Azure.Functions.Worker;
+﻿using Microsoft.Azure.Functions.Worker;
 using Microsoft.Data.SqlClient;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
@@ -32,9 +31,7 @@ public static class RetryFunctions
 
         // Toggle between minutes and seconds for testing
         TimeSpan fireAt = new(hours: 0, minutes: retryInterval > retryOrchestrationObject.RetryIntervalMinutesMax ? retryOrchestrationObject.RetryIntervalMinutesMax : retryInterval, seconds: 0);
-
-        // This is used during testing to make the interval short
-        //TimeSpan fireAt = new(hours: 0, 0, seconds: 10);
+        //TimeSpan fireAt = new(hours: 0, 0, seconds: 10);// This is used during testing to make the interval short
 
         // Non-blocking timer inside the orchestrator; execution resumes after fireAt elapses
         await context.CreateTimer(fireAt, default);
