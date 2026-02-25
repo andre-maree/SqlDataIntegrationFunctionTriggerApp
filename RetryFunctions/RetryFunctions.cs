@@ -40,7 +40,7 @@ public static class RetryFunctions
         
         RetryPolicy retryPolicy = new(
             maxNumberOfAttempts: 999999,
-            firstRetryInterval: TimeSpan.FromMinutes(1),
+            firstRetryInterval: TimeSpan.FromSeconds(10),
             backoffCoefficient: 1.125,
             maxRetryInterval: TimeSpan.FromMinutes(retryOrchestrationObject.RetryIntervalMinutesMax),
             retryTimeout: retryOrchestrationObject.SqlActivityObject.RetryTimeoutSpan);
