@@ -2,7 +2,8 @@
 {
     public sealed class RetryOrchestrationObject
     {
-        public int IntervalMinutes { get; set; }
+        public int RetryIntervalMinutesFirst { get; set; }
+        public int RetryIntervalMinutesMax { get; set; }
         public SqlActivityObject SqlActivityObject { get; set; }
     }
 

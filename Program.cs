@@ -34,7 +34,8 @@ builder.Services.AddTransient<IDataSyncAction>(sp => sp.GetRequiredService<HttpP
 builder.Services.AddOptions<AppSettings>()
     .Configure<IConfiguration>((opts, cfg) =>
     {
-        opts.DurableFunctionRetryIntervalMinutes = cfg.GetValue<int>("DurableFunctionRetryIntervalMinutes");
+        opts.RetryIntervalMinutesFirst = cfg.GetValue<int>("RetryIntervalMinutesFirst");
+        opts.RetryIntervalMinutesMax = cfg.GetValue<int>("RetryIntervalMinutesMax");
         opts.TotalRetryTimeOutHours = cfg.GetValue<int>("TotalRetryTimeOutHours");
         opts.NotifyOnRetryCount = cfg.GetValue<int>("NotifyOnRetryCount");
         opts.SqlConnectionString = cfg.GetConnectionString("SqlConnectionString") ?? cfg["SqlConnectionString"];
