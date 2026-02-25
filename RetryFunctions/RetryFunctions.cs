@@ -28,9 +28,13 @@ public static class RetryFunctions
         // Input: retry cadence. The value is minutes or seconds depending on the chosen TimeSpan (see toggle below).
         RetryOrchestrationObject retryOrchestrationObject = context.GetInput<RetryOrchestrationObject>();
 
+        int retryInterval = retryOrchestrationObject.RetryIntervalMinutesFirst + retryOrchestrationObject.SqlActivityObject.RetryCount;
+
         // Toggle between minutes and seconds for testing
-        TimeSpan fireAt = new(hours: 0, minutes: retryOrchestrationObject.IntervalMinutes, seconds: 0);
-        //TimeSpan fireAt = new(hours: 0, minutes: 0, seconds: retryOrchestrationObject.IntervalMinutes);
+        TimeSpan fireAt = new(hours: 0, minutes: retryInterval > retryOrchestrationObject.RetryIntervalMinutesMax ? retryOrchestrationObject.RetryIntervalMinutesMax : retryInterval, seconds: 0);
+
+        // This is used during testing to make the interval short
+        //TimeSpan fireAt = new(hours: 0, 0, seconds: 10);
 
         // Non-blocking timer inside the orchestrator; execution resumes after fireAt elapses
         await context.CreateTimer(fireAt, default);
@@ -39,9 +43,9 @@ public static class RetryFunctions
         
         RetryPolicy retryPolicy = new(
             maxNumberOfAttempts: 999999,
-            firstRetryInterval: TimeSpan.FromSeconds(15),
+            firstRetryInterval: TimeSpan.FromMinutes(1),
             backoffCoefficient: 1.125,
-            maxRetryInterval: TimeSpan.FromMinutes(retryOrchestrationObject.IntervalMinutes),
+            maxRetryInterval: TimeSpan.FromMinutes(retryOrchestrationObject.RetryIntervalMinutesMax),
             retryTimeout: retryOrchestrationObject.SqlActivityObject.RetryTimeoutSpan);
 
         TaskOptions options = new(retry: retryPolicy);

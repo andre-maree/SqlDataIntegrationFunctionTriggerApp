@@ -6,7 +6,6 @@ using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using SqlDataIntegrationFunctionTriggerApp.Models;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SqlDataIntegrationFunctionTriggerApp;
 
@@ -137,11 +136,13 @@ public static class ExecuteTriggerHelper
 
                 RetryOrchestrationObject retryOrchestrationObject = new()
                 {
-                    IntervalMinutes = settings.DurableFunctionRetryIntervalMinutes,
+                    RetryIntervalMinutesFirst = settings.RetryIntervalMinutesFirst,
+                    RetryIntervalMinutesMax = settings.RetryIntervalMinutesMax,
                     SqlActivityObject = new SqlActivityObject
                     {
                         RetryTimeoutSpan = TimeSpan.FromHours(settings.TotalRetryTimeOutHours),
-                        StartDate = DateTime.UtcNow
+                        StartDate = DateTime.UtcNow,
+
                     }
                 };
 

@@ -9,9 +9,10 @@
         "Sql_Trigger_PollingIntervalMs": 5000,
         "Sql_Trigger_MaxChangesPerWorker": 1000,
         "HttpPostBaseUrl": "https://httpbin.org/",
-        "DurableFunctionRetryIntervalMinutes": 6,
+        "RetryIntervalMinutesFirst": 6,
+        "RetryIntervalMinutesMax": 12,
         "AllowedColumns_dbo.TrackingDemo": "Id,Name",
-        "NotifyOnRetryCount": 5,
+        "NotifyOnRetryCount": 10,
         "TotalRetryTimeOutHours": 168,
         "KeepInstanceCompletedHistoryDays": 7,
         "KeepInstanceFailedHistoryDays": 30
